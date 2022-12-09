@@ -10,12 +10,15 @@ from abc import ABC, abstractmethod
 from bornagain import IDistribution1D, RectangularDetector
 
 
-class Instrument(ABC):
+class Experiment(ABC):
     """
     Base class for all instruments.
 
     Constructor should include all necessary instrument parameters.
     """
+
+    I0 = 1.0
+    Ibg = 0.0
 
     @property
     @abstractmethod
