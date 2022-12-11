@@ -4,20 +4,24 @@ and run the BornAgain simulation.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from bornagain import Beam, ConstantBackground, Direction, DistributionTrapezoid, GISASSimulation, MultiLayer
 
 from .experiment_base import Experiment
+from .parameter_base import Parametered
 
-
-class Sample(ABC):
+@dataclass
+class Sample(ABC, Parametered):
     """
     Derive from this abstract class to create your sample.
     It will be used for the simulation.
+
+    Args:
+        avg_material [bool]: If average material SLD is used for simulation or the one supplied for the layer.
     """
 
-    avg_material: bool = True  # use average material for layers in simulation
+    avg_material: bool = True
 
     @abstractmethod
     def get_sample(self) -> MultiLayer:

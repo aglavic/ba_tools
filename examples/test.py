@@ -1,12 +1,15 @@
+from dataclasses import dataclass
+
 import bornagain as ba
+from bornagain import nm, deg
 
 from matplotlib import pylab
 
-from ba_tools import Sample, Simulation
+from ba_tools import Sample, Simulation, ResolutionOptions
 from ba_tools.instruments.generic import GenericSANS
-from ba_tools.units import deg, nm
 
 
+@dataclass
 class SpecificSample(Sample):
     def get_sample(self):
         """
@@ -55,10 +58,12 @@ class SpecificSample(Sample):
 def main():
     from bornagain import ba_plot
 
-    inst = GenericSANS()
+    inst = GenericSANS(detector_distance=8, collimation_length=8, alpha_i=0.25)
+
     smpl = SpecificSample()
     sim = Simulation(smpl, inst)
-    sim = sim.GISANS()
+    #sim.include_specular=False
+    sim = sim.GISANS(ResolutionOptions(wavelength_bins=5, alpha_bins=11, phi_bins=11))
     ba_plot.run_and_plot(sim)
 
 

@@ -6,19 +6,21 @@ All values returned should be in BornAgain units.
 """
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, fields, field, Field
 
-from bornagain import IDistribution1D, RectangularDetector
+from bornagain import IDistribution1D, RectangularDetector, millimeter as mm, nm, nm2, angstrom, deg, rad
+from .parameter_base import Parametered
 
-
-class Experiment(ABC):
+@dataclass
+class Experiment(ABC, Parametered):
     """
     Base class for all instruments.
 
     Constructor should include all necessary instrument parameters.
     """
 
-    I0 = 1.0
-    Ibg = 0.0
+    I0: float = 1.0
+    Ibg: float = 0.0
 
     @property
     @abstractmethod
