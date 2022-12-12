@@ -6,13 +6,14 @@ and run the BornAgain simulation.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from bornagain import Beam, ConstantBackground, Direction, GISASSimulation, MultiLayer, ParameterDistribution
+from bornagain import (Beam, ConstantBackground, Direction, GISASSimulation, MultiLayer, ParameterDistribution,
+                       materialProfile)
 
 from .experiment_base import Experiment
 from .parameter_base import Parametered
 
 
-@dataclass
+@dataclass(repr=False)
 class Sample(ABC, Parametered):
     """
     Derive from this abstract class to create your sample.
@@ -27,6 +28,11 @@ class Sample(ABC, Parametered):
     @abstractmethod
     def get_sample(self) -> MultiLayer:
         ...
+
+    def SLD_profile(self):
+        sample = self.get_sample()
+        zpoints, slds = materialProfile(sample)
+        return zpoints, slds
 
 
 @dataclass
@@ -57,6 +63,9 @@ class Simulation:
     def __init__(self, sample: Sample, experiment: Experiment):
         self.sample = sample
         self.experiment = experiment
+
+    def SLD_profile(self):
+        return self.sample.SLD_profile()
 
     def GISANS(self, resopts: ResolutionOptions = NO_RES):
         beam = Beam(self.experiment.I0, self.experiment.wavelength, Direction(self.experiment.alpha_i, 0.0))

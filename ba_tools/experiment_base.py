@@ -6,12 +6,16 @@ All values returned should be in BornAgain units.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, fields, field, Field
+from dataclasses import Field, dataclass, field, fields
 
-from bornagain import IDistribution1D, RectangularDetector, millimeter as mm, nm, nm2, angstrom, deg, rad
+from bornagain import IDistribution1D, RectangularDetector, angstrom, deg
+from bornagain import millimeter as mm
+from bornagain import nm, nm2, rad
+
 from .parameter_base import Parametered
 
-@dataclass
+
+@dataclass(repr=False)
 class Experiment(ABC, Parametered):
     """
     Base class for all instruments.
