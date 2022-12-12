@@ -6,10 +6,11 @@ and run the BornAgain simulation.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from bornagain import Beam, ConstantBackground, Direction, DistributionTrapezoid, GISASSimulation, MultiLayer
+from bornagain import Beam, ConstantBackground, Direction, GISASSimulation, MultiLayer, ParameterDistribution
 
 from .experiment_base import Experiment
 from .parameter_base import Parametered
+
 
 @dataclass
 class Sample(ABC, Parametered):
@@ -67,13 +68,15 @@ class Simulation:
 
         if resopts.wavelength_bins:
             wavelength_distr = self.experiment.res_wavelength
-            sim.addParameterDistribution("*/Beam/Wavelength", wavelength_distr, resopts.wavelength_bins)
+            sim.addParameterDistribution(
+                ParameterDistribution.BeamWavelength, wavelength_distr, resopts.wavelength_bins
+            )
         if resopts.alpha_bins:
             alpha_distr = self.experiment.res_alpha
-            sim.addParameterDistribution("*/Beam/InclinationAngle", alpha_distr, resopts.alpha_bins)
+            sim.addParameterDistribution(ParameterDistribution.BeamInclinationAngle, alpha_distr, resopts.alpha_bins)
         if resopts.phi_bins:
             phi_distr = self.experiment.res_phi
-            sim.addParameterDistribution("*/Beam/AzimuthalAngle", phi_distr, resopts.phi_bins)
+            sim.addParameterDistribution(ParameterDistribution.BeamAzimuthalAngle, phi_distr, resopts.phi_bins)
 
         # define polarization parameters from flipper 1/2 setting
         # if F1:

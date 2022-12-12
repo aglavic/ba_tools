@@ -1,9 +1,10 @@
 """
 Some generic instruments typical at neutron facilities.
 """
+from dataclasses import dataclass
+
 from bornagain import DistributionGate, DistributionTrapezoid, RectangularDetector, kvector_t
 from numpy import arctan2, cos, sin
-from dataclasses import dataclass, field
 
 from ..experiment_base import Experiment
 from ..parameter_base import pp
@@ -11,23 +12,26 @@ from ..parameter_base import pp
 
 @dataclass
 class GenericSANS(Experiment):
-    alpha_i:float = pp(1.0, 'deg')
-    wavelength:float = pp(6.0, 'angstrom')
-    collimation_length:float = pp(10.0, 'm')
-    detector_distance:float = pp(10.0, 'm')
-    sample_size:float = pp(20.0, 'mm')
-    guide_size:float = pp(50.0, 'mm')
-    detector_size:float = pp(1000.0, 'mm')
-    detector_pixels:int = 200
-    dlambda_rel:float = 0.1
+    alpha_i: float = pp(1.0, "deg")
+    wavelength: float = pp(6.0, "angstrom")
+    collimation_length: float = pp(10.0, "m")
+    detector_distance: float = pp(10.0, "m")
+    sample_size: float = pp(20.0, "mm")
+    guide_size: float = pp(50.0, "mm")
+    detector_size: float = pp(1000.0, "mm")
+    detector_pixels: int = 200
+    dlambda_rel: float = 0.1
 
     @property
     def detector(self) -> RectangularDetector:
         # Detector centered on and perpendicular to the direct beam
         det = RectangularDetector(self.detector_pixels, self.detector_size, self.detector_pixels, self.detector_size)
         dist = self.detector_distance
-        normal = kvector_t(dist * cos(-self.alpha_i), 0.0, dist * sin(-self.alpha_i))
-        det.setPosition(normal, self.detector_size / 2.0, self.detector_size / 2.0)
+        if hasattr(det, "setPerpendicularToDirectBeam"):
+            det.setPerpendicularToDirectBeam(dist, self.detector_size / 2.0, self.detector_size / 2.0)
+        else:
+            normal = kvector_t(dist * cos(-self.alpha_i), 0.0, dist * sin(-self.alpha_i))
+            det.setPosition(normal, self.detector_size / 2.0, self.detector_size / 2.0)
         return det
 
     @property
