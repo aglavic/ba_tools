@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from bornagain import DistributionGate, DistributionTrapezoid, RectangularDetector, kvector_t
 from bornagain import millimeter as mm
-from numpy import arctan2, cos, sin
+from numpy import arange, arctan2, cos, empty, linspace, maximum, meshgrid, newaxis, ones, sin, sqrt, where, zeros_like
 
 from ..experiment_base import Experiment
 from ..parameter_base import pp
@@ -55,7 +55,7 @@ class GenericSANS(Experiment):
     def res_wavelength(self) -> DistributionTrapezoid:
         # triangular resolution of velocity selector
         fwhm = self._config.dlambda_rel * self.wavelength
-        return DistributionTrapezoid(self.wavelength, fwhm / 2.0, 0.0, fwhm / 2.0)
+        return DistributionTrapezoid(self.wavelength, fwhm, 0.0, fwhm)
 
     @property
     def res_alpha(self) -> DistributionGate:
@@ -69,7 +69,99 @@ class GenericSANS(Experiment):
         # resolution from sample and entrance slit
         max_hw = arctan2((self._config.guide_size + self.sample_size) / 2.0, self.collimation_length)
         min_hw = arctan2((self._config.guide_size - self.sample_size) / 2.0, self.collimation_length)
-        return DistributionTrapezoid(0.0, max_hw - min_hw, min_hw, max_hw - min_hw)
+        return DistributionTrapezoid(0.0, max_hw - min_hw, 2*min_hw, max_hw - min_hw)
+
+    def apply_fast_resolution(self, data, wavelengt=False, alpha=True, phi=True):
+        """
+        Implements effect of resolution with fast convolution.
+
+        Angular resolution is done using FFT convolution,
+        wavelength spread is later added with second
+        convolution that includes the effect of relative spread.
+        """
+
+        if wavelengt:
+            xy = arange(self._config.detector_pixels)
+            # pixel distanc from beam center
+            R = sqrt(((xy-self._config.center_x_pix)**2)[:, newaxis]+((xy-self._config.center_y_pix)**2)[newaxis, :])
+            Phi = arctan2((xy-self._config.center_x_pix)[:, newaxis], (xy-self._config.center_y_pix)[newaxis, :])
+            res_max = self._config.dlambda_rel # FWHM of triangular distribution
+            result_a = zeros_like(data)
+            for i in xy:
+                for j in xy:
+                    Rij = R[j, i]
+                    Phiij = Phi[j, i]
+                    res_pts = Rij*res_max # need to cover FWHM range around the center point
+                    N=0.
+                    i_range = int(2*res_pts*abs(cos(Phiij)))
+                    j_range = int(2*res_pts*abs(sin(Phiij)))
+                    if (i-i_range)<0 or (j-j_range)<0 or (i+i_range)>=xy[-1] or (j+j_range)>=xy[-1] or max(i_range, j_range)<2:
+                        result_a[i,j] = data[i,j]
+                        continue
+
+                    if i_range>j_range:
+                        ij_scale = j_range/i_range
+                        for k in range(-i_range//2, i_range//2+1):
+                            f = 0.5-abs(k)/i_range
+                            N+=f
+                            result_a[i, j] += f*data[i+k, j+int(k*ij_scale)]
+                    else:
+                        ij_scale = i_range/j_range
+                        for k in range(-j_range//2, j_range//2+1):
+                            f = 0.5-abs(k)/j_range
+                            N+=f
+                            result_a[i, j] += f*data[i+int(k*ij_scale), j+k]
+                    result_a[i,j]/=N
+            data = result_a
+
+        if alpha and phi:
+            from scipy.signal import fftconvolve
+            # implement angular resolution, vertical directly defined by size of kernel
+            angle_per_pixel = arctan2(self._config.detector_size/self._config.detector_pixels, self.detector_distance)
+            alpha_res = arctan2(self._config.guide_size / 2.0, self.collimation_length)
+            kernel_height = int(2*alpha_res/angle_per_pixel)+1
+            max_hw = arctan2((self._config.guide_size + self.sample_size) / 2.0, self.collimation_length)
+            min_hw = arctan2((self._config.guide_size - self.sample_size) / 2.0, self.collimation_length)
+            kernel_width = int(2*max_hw/angle_per_pixel)+1
+            dx = linspace(-kernel_width/2., kernel_width/2., kernel_width)
+            kernel = ones(kernel_height)[:, newaxis] * \
+                     where(abs(dx)<(min_hw/angle_per_pixel), 1.0,
+                           maximum(1.0-(abs(dx)-min_hw/angle_per_pixel)/(max_hw-min_hw)*angle_per_pixel, 0.))[newaxis, :]
+            norm = kernel.sum()
+            if norm==0.:
+                return data
+            kernel/=norm
+            data = fftconvolve(data, kernel, mode='same')
+        elif phi:
+            from scipy.signal import fftconvolve
+            # implement angular resolution, vertical directly defined by size of kernel
+            angle_per_pixel = arctan2(self._config.detector_size/self._config.detector_pixels, self.detector_distance)
+            max_hw = arctan2((self._config.guide_size+self.sample_size)/2.0, self.collimation_length)
+            min_hw = arctan2((self._config.guide_size-self.sample_size)/2.0, self.collimation_length)
+            kernel_width = int(2*max_hw/angle_per_pixel)+1
+            dx = linspace(-kernel_width/2., kernel_width/2., kernel_width)
+            kernel = ones(1)[:, newaxis]* \
+                     where(abs(dx)<(min_hw/angle_per_pixel), 1.0,
+                           maximum(1.0-(abs(dx)-min_hw/angle_per_pixel)/(max_hw-min_hw)*angle_per_pixel, 0.))[newaxis, :]
+            norm = kernel.sum()
+            if norm==0.:
+                return data
+            kernel /= norm
+            data = fftconvolve(data, kernel, mode='same')
+        elif alpha:
+            from scipy.signal import fftconvolve
+            # implement angular resolution, vertical directly defined by size of kernel
+            angle_per_pixel = arctan2(self._config.detector_size/self._config.detector_pixels, self.detector_distance)
+            alpha_res = arctan2(self._config.guide_size/2.0, self.collimation_length)
+            kernel_height = int(2*alpha_res/angle_per_pixel)+1
+            kernel = ones(kernel_height)[:, newaxis]* ones(1)[newaxis, :]
+            norm = kernel.sum()
+            if norm==0.:
+                return data
+            kernel /= norm
+            data = fftconvolve(data, kernel, mode='same')
+        return data
+
 
     def _box_svg_(self):
         """

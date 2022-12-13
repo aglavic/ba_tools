@@ -38,12 +38,22 @@ class Sample(ABC, Parametered):
 
 @dataclass
 class ResolutionOptions:
+    """
+    Number of points for resolution convolution.
+    Negative numbers indicate to use fast approximation.
+
+    Fast approximation uses convolutions with the resulting image,
+    it works well for phi and sometime alpha resolution of the scattered pattern
+    but does not capture change in specular intensity with alpha_i.
+    For wavelength the specular is always wrong, as there is no differenc
+    in the scattering pattern between wavelength dependent and independent features.
+    """
     wavelength_bins: int = 0
     alpha_bins: int = 0
     phi_bins: int = 0
 
-
 NO_RES = ResolutionOptions(0, 0, 0)
+FAST_RES = ResolutionOptions(5, 5, -1)
 
 
 @dataclass
@@ -76,15 +86,15 @@ class Simulation:
         sim = GISASSimulation(beam, sample, detector)
         sim.getOptions().setIncludeSpecular(self.include_specular)
 
-        if resopts.wavelength_bins:
+        if resopts.wavelength_bins>0:
             wavelength_distr = self.experiment.res_wavelength
             sim.addParameterDistribution(
                 ParameterDistribution.BeamWavelength, wavelength_distr, resopts.wavelength_bins
             )
-        if resopts.alpha_bins:
+        if resopts.alpha_bins>0:
             alpha_distr = self.experiment.res_alpha
             sim.addParameterDistribution(ParameterDistribution.BeamInclinationAngle, alpha_distr, resopts.alpha_bins)
-        if resopts.phi_bins:
+        if resopts.phi_bins>0:
             phi_distr = self.experiment.res_phi
             sim.addParameterDistribution(ParameterDistribution.BeamAzimuthalAngle, phi_distr, resopts.phi_bins)
 
@@ -119,6 +129,17 @@ class Simulation:
         return sim
 
     def runGISANS(self, resopts: ResolutionOptions = NO_RES):
-        sim = self.GISANS(resopts)
-        sim.runSimulation()
-        return SimulationResult(sim.result())
+        fast_wl = resopts.wavelength_bins<0
+        fast_alpha = resopts.alpha_bins<0
+        fast_phi = resopts.phi_bins<0
+        if fast_wl or fast_alpha or fast_phi:
+            sim = self.GISANS(resopts)
+            sim.runSimulation()
+            res = sim.result()
+            data = self.experiment.apply_fast_resolution(res.array(), wavelengt=fast_wl,
+                                                         alpha=fast_alpha, phi=fast_phi)
+            return SimulationResult(res, overwrite_array=data)
+        else:
+            sim = self.GISANS(resopts)
+            sim.runSimulation()
+            return SimulationResult(sim.result())

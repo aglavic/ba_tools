@@ -97,3 +97,10 @@ class Experiment(ABC, Parametered):
         """
         Vertical beam resolution.
         """
+
+    def apply_fast_resolution(self, data, wavelengt=False, alpha=True, phi=True):
+        """
+        A fast implementation of resolution that works directly on a simulated
+        image. Will not include changes in scattering from incident beam resolution.
+        """
+        raise NotImplemented(f'Class {self.__class__.__qualname__} does not define fast resolution convolution')
