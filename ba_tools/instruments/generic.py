@@ -20,41 +20,55 @@ class GenericSANS(Experiment):
     collimation_length: float = pp(10.0, "m")
     detector_distance: float = pp(10.0, "m")
     sample_size: float = pp(20.0, "mm")
-    guide_size: float = pp(50.0, "mm")
-    detector_size: float = pp(1000.0, "mm")
-    detector_pixels: int = 200
-    dlambda_rel: float = 0.1
+
+    @dataclass(repr=False)
+    class Config(Experiment.Config):
+        guide_size: float = pp(50.0, "mm")
+        detector_size: float = pp(1000.0, "mm")
+        detector_pixels: int = 200
+        center_x_pix: float = 100.0
+        center_y_pix: float = 100.0
+        dlambda_rel: float = 0.1
+
+    _config = Config()
 
     @property
     def detector(self) -> RectangularDetector:
         # Detector centered on and perpendicular to the direct beam
-        det = RectangularDetector(self.detector_pixels, self.detector_size, self.detector_pixels, self.detector_size)
+        det = RectangularDetector(
+            self._config.detector_pixels,
+            self._config.detector_size,
+            self._config.detector_pixels,
+            self._config.detector_size,
+        )
         dist = self.detector_distance
+        x0 = self._config.detector_size * self._config.center_x_pix / self._config.detector_pixels
+        y0 = self._config.detector_size * self._config.center_y_pix / self._config.detector_pixels
         if hasattr(det, "setPerpendicularToDirectBeam"):
-            det.setPerpendicularToDirectBeam(dist, self.detector_size / 2.0, self.detector_size / 2.0)
+            det.setPerpendicularToDirectBeam(dist, x0, y0)
         else:
             normal = kvector_t(dist * cos(-self.alpha_i), 0.0, dist * sin(-self.alpha_i))
-            det.setPosition(normal, self.detector_size / 2.0, self.detector_size / 2.0)
+            det.setPosition(normal, x0, y0)
         return det
 
     @property
     def res_wavelength(self) -> DistributionTrapezoid:
         # triangular resolution of velocity selector
-        fwhm = self.dlambda_rel * self.wavelength
+        fwhm = self._config.dlambda_rel * self.wavelength
         return DistributionTrapezoid(self.wavelength, fwhm / 2.0, 0.0, fwhm / 2.0)
 
     @property
     def res_alpha(self) -> DistributionGate:
         # resolution for point-like sample
         ai = self.alpha_i
-        hwhm = arctan2(self.guide_size / 2.0, self.collimation_length)
+        hwhm = arctan2(self._config.guide_size / 2.0, self.collimation_length)
         return DistributionGate(ai - hwhm, ai + hwhm)
 
     @property
     def res_phi(self) -> DistributionTrapezoid:
         # resolution from sample and entrance slit
-        max_hw = arctan2((self.guide_size + self.sample_size) / 2.0, self.collimation_length)
-        min_hw = arctan2((self.guide_size - self.sample_size) / 2.0, self.collimation_length)
+        max_hw = arctan2((self._config.guide_size + self.sample_size) / 2.0, self.collimation_length)
+        min_hw = arctan2((self._config.guide_size - self.sample_size) / 2.0, self.collimation_length)
         return DistributionTrapezoid(0.0, max_hw - min_hw, min_hw, max_hw - min_hw)
 
     def _box_svg_(self):

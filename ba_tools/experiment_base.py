@@ -26,6 +26,36 @@ class Experiment(ABC, Parametered):
     I0: float = 1.0
     Ibg: float = 0.0
 
+    class Config(Parametered):
+        """
+        All configuration parameters for the instument that can be considered "fixed".
+        This helps to separate user configurable options from hardware/alignment given ones.
+
+        An example would be the center of the direct beam on the detector,
+        that will not change during the course of an experiment.
+        """
+
+        ...
+
+    _config = Config()
+
+    @classmethod
+    def set_config(cls, config: Config = None, **kwargs):
+        """
+        Define general instrument configuration parameters. The
+        parameters are defined in the object.Config class (if it exists)
+        and can be provided either as an instance of that class or
+        as keyword parameters when calling set_config.
+        Any missing arguments are set to default.
+
+        For the possible keywords see object.Config.
+        """
+        if config is None:
+            config = cls.Config(**kwargs)
+        if not isinstance(config, cls.Config):
+            raise TypeError(f"Only {cls.Config.__qualname__} objects can be sued as configuration.")
+        cls._config = config
+
     @property
     @abstractmethod
     def alpha_i(self) -> float:
