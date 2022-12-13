@@ -11,6 +11,7 @@ from bornagain import (Beam, ConstantBackground, Direction, GISASSimulation, Mul
 
 from .experiment_base import Experiment
 from .parameter_base import Parametered
+from .result_object import SimulationResult
 
 
 @dataclass(repr=False)
@@ -116,3 +117,8 @@ class Simulation:
         # make sure the layer average SLD is calculated correctly for the full structural model
         sim.getOptions().setUseAvgMaterials(self.sample.avg_material)
         return sim
+
+    def runGISANS(self, resopts: ResolutionOptions = NO_RES):
+        sim = self.GISANS(resopts)
+        sim.runSimulation()
+        return SimulationResult(sim.result())
