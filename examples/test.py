@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import bornagain as ba
 
 from bornagain import deg, nm
-from matplotlib import pylab
+from matplotlib import pyplot
 
 from ba_tools import ResolutionOptions, Sample, Simulation
 from ba_tools.instruments.generic import GenericSANS
@@ -64,60 +64,59 @@ def main():
     # create sample and simulation
     smpl = SpecificSample()
     sim = Simulation(smpl, inst)
-    #sim.include_specular=False
+    # sim.include_specular=False
 
     # testing different fast resolution options
-    from matplotlib import pyplot
-    pyplot.figure(figsize=(20,30))
+    pyplot.figure(figsize=(20, 30))
 
-    print('sim 1')
+    print("sim 1")
     pyplot.subplot(421)
-    pyplot.title('normal phi resolution')
+    pyplot.title("normal phi resolution")
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=0, alpha_bins=0, phi_bins=11))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
 
-    print('sim 2')
+    print("sim 2")
     pyplot.subplot(422)
-    pyplot.title('fast phi resolution')
+    pyplot.title("fast phi resolution")
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=0, alpha_bins=0, phi_bins=-1))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
 
-    print('sim 3')
+    print("sim 3")
     pyplot.subplot(423)
-    pyplot.title('normal alpha resolution')
+    pyplot.title("normal alpha resolution")
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=0, alpha_bins=11, phi_bins=0))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
 
-    print('sim 4')
+    print("sim 4")
     pyplot.subplot(424)
-    pyplot.title('fast alpha resolution')
+    pyplot.title("fast alpha resolution")
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=0, alpha_bins=-1, phi_bins=0))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
 
-    print('sim 5')
+    print("sim 5")
     pyplot.subplot(425)
-    pyplot.title('normal phi resolution')
+    pyplot.title("normal phi resolution")
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=11, alpha_bins=0, phi_bins=0))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
 
-    print('sim 6')
+    print("sim 6")
     pyplot.subplot(426)
-    pyplot.title('fast phi resolution')
+    pyplot.title("fast phi resolution")
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=-1, alpha_bins=0, phi_bins=0))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
 
-    print('sim 7')
+    print("sim 7")
     pyplot.subplot(427)
-    pyplot.title('normal all resolutions')
+    pyplot.title("normal all resolutions")
     # Simulate using resolution of wavelenght, incident and azimuth angle (will take a while)
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=5, alpha_bins=11, phi_bins=11))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
 
-    print('sim 8')
+    print("sim 8")
     pyplot.subplot(428)
-    pyplot.title('fast phi normal alpha/wavelength reslutions')
+    pyplot.title("fast phi normal alpha/wavelength reslutions")
     res = sim.runGISANS(ResolutionOptions(wavelength_bins=5, alpha_bins=11, phi_bins=-1))
-    res.plot_detector(cmap='inferno', crange=(1e-9, 1e-2))
+    res.plot_detector(cmap="inferno", crange=(1e-9, 1e-2))
     pyplot.show()
 
 

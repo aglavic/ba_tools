@@ -2,6 +2,7 @@
 Simplified way of describing layers and materials for quick building of
 multilayers with roughness.
 """
+from copy import copy
 from dataclasses import dataclass
 from typing import List
 
@@ -49,8 +50,14 @@ class Slabs(Parametered):
         for layer in self.layers:
             if not isinstance(layer, SLayer):
                 raise ValueError("Each layer has to be of type SLayer")
-            if layer.name in keys:
-                raise ValueError("Each layer has to have a unique name")
+            while layer.name in keys:
+                layer = copy(layer)
+                if "#" in layer.name:
+                    name, id = layer.name.rsplit("#", 2)
+                    id = int(id) + 1
+                    layer.name = f"{name}#{id}"
+                else:
+                    layer.name = f"{layer.name}#1"
             # convert possible float falues to complex
             layer.nSLD = complex(layer.nSLD)
             layer.xSLD = complex(layer.xSLD)

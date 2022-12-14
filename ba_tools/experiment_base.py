@@ -63,12 +63,20 @@ class Experiment(ABC, Parametered):
         Defines angle of incidence to sample.
         """
 
+    @alpha_i.setter
+    def alpha_i(self, value: float):
+        ...
+
     @property
     @abstractmethod
     def wavelength(self) -> float:
         """
         Defines incidence wavelength.
         """
+
+    @wavelength.setter
+    def wavelength(self, value: float):
+        ...
 
     @property
     @abstractmethod
@@ -103,4 +111,4 @@ class Experiment(ABC, Parametered):
         A fast implementation of resolution that works directly on a simulated
         image. Will not include changes in scattering from incident beam resolution.
         """
-        raise NotImplemented(f'Class {self.__class__.__qualname__} does not define fast resolution convolution')
+        raise NotImplementedError(f"Class {self.__class__.__qualname__} does not define fast resolution convolution")
